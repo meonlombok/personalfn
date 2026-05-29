@@ -410,8 +410,7 @@
 
   <div id="transactionModal"
     class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm hidden items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-    <div
-      class="bg-white rounded-t-3xl sm:rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden animate-in slide-in-from-bottom sm:slide-in-from-none duration-200">
+    <div class="bg-white rounded-t-3xl sm:rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden">
       <div class="px-6 py-4.5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
         <div>
           <h3 class="font-extrabold text-slate-900 text-base" id="modalTitle">Tambah Catatan</h3>
@@ -556,7 +555,12 @@ function doGet(e) {
   for (var i = 1; i < dataTx.length; i++) {
     var row = {};
     for (var j = 0; j < headersTx.length; j++) {
-      row[headersTx[j]] = dataTx[i][j];
+      var val = dataTx[i][j];
+      // Jika tipe data adalah Date, ubah paksa menjadi string Indonesia dd-MM-yyyy
+      if (headersTx[j] === "date" && val instanceof Date) {
+        val = Utilities.formatDate(val, ss.getSpreadsheetTimeZone(), "dd-MM-yyyy");
+      }
+      row[headersTx[j]] = val;
     }
     rowsTx.push(row);
   }
@@ -571,10 +575,25 @@ function doGet(e) {
   for (var i = 1; i < dataBal.length; i++) {
     initialBalances[dataBal[i][0]] = Number(dataBal[i][1]) || 0;
   }
+
+  // Ambil tab Next Month Bill
+  var sheetBill = ss.getSheetByName("Next Month Bill") || ss.insertSheet("Next Month Bill");
+  if (sheetBill.getLastRow() === 0) {
+    sheetBill.appendRow(["tagihan", "nominal"]);
+    sheetBill.appendRow(["KPR BTN (Rumah)", 1500000]);
+    sheetBill.appendRow(["Cicilan Kartu Kredit", 500000]);
+    sheetBill.appendRow(["Tagihan Lainnya", 0]);
+  }
+  var dataBill = sheetBill.getDataRange().getValues();
+  var nextMonthBills = {};
+  for (var i = 1; i < dataBill.length; i++) {
+    nextMonthBills[dataBill[i][0]] = Number(dataBill[i][1]) || 0;
+  }
   
   var result = {
     transactions: rowsTx,
-    initialBalances: initialBalances
+    initialBalances: initialBalances,
+    nextMonthBills: nextMonthBills
   };
   
   return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
@@ -653,6 +672,16 @@ function doPost(e) {
     for (var key in balancesObj) {
       sheetBal.appendRow([key, balancesObj[key]]);
     }
+
+    // Simpan Next Month Bill
+    var sheetBill = ss.getSheetByName("Next Month Bill") || ss.insertSheet("Next Month Bill");
+    sheetBill.clear();
+    sheetBill.appendRow(["tagihan", "nominal"]);
+    var billsObj = params.nextMonthBills;
+    for (var key in billsObj) {
+      sheetBill.appendRow([key, billsObj[key]]);
+    }
+
     return ContentService.createTextOutput(JSON.stringify({status: "success"})).setMimeType(ContentService.MimeType.JSON);
   }
 }
@@ -687,8 +716,8 @@ function doPost(e) {
           <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 text-[11px] md:text-xs text-blue-800">
             <p class="font-bold mb-1"><i class="fa-solid fa-info-circle"></i> Atur Saldo Awal & Estimasi Cicilan Bulanan
             </p>
-            <p>Silakan sesuaikan saldo nyata Anda. Untuk KPR dan Pinjaman Pribadi, masukkan nilai estimasi cicilan tetap
-              Anda per bulan untuk memproyeksikan tagihan *Next Payment* bulan depan.</p>
+            <p>Silakan sesuaikan saldo nyata Anda. Masukkan nilai estimasi kewajiban bulanan tetap Anda pada kolom di
+              bawah ini untuk memproyeksikan tagihan *Next Month Bill* di halaman utama.</p>
           </div>
 
           <!-- Saldo Awal Fields -->
@@ -696,9 +725,9 @@ function doPost(e) {
           <div id="initialBalancesFields" class="grid grid-cols-1 md:grid-cols-2 gap-3.5"></div>
 
           <!-- Estimasi Cicilan Bulanan Fields (Option A) -->
-          <h4 class="font-bold text-xs uppercase text-slate-500 border-b pb-1 pt-3">Estimasi Cicilan Bulanan Tetap (Next
-            Payment)</h4>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+          <h4 class="font-bold text-xs uppercase text-slate-500 border-b pb-1 pt-3">Estimasi Tagihan Bulan Depan (Next
+            Month Bill)</h4>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5">
             <div>
               <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Cicilan KPR BTN (Rumah)</label>
               <div class="relative">
@@ -708,10 +737,18 @@ function doPost(e) {
               </div>
             </div>
             <div>
-              <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Cicilan Pinjaman Pribadi</label>
+              <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Cicilan Kartu Kredit</label>
               <div class="relative">
                 <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] font-bold text-slate-400">Rp</span>
-                <input type="number" id="install_pribadi" value="500000"
+                <input type="number" id="install_cc" value="500000"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-2 py-1.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-blue-500">
+              </div>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Tagihan Lainnya</label>
+              <div class="relative">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] font-bold text-slate-400">Rp</span>
+                <input type="number" id="install_others" value="0"
                   class="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-2 py-1.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-blue-500">
               </div>
             </div>
@@ -770,15 +807,15 @@ function doPost(e) {
     const paylaterLimits = {
       'Gopay Letter': 20000000,
       'Kredivo': 10000000,
-      'Credinex': 1000000,
-      'Pinjaman Pribadi': 10000000,
-      'KPR BTN (Rumah)': 165000000,
+      'Credinex': 10000000,
+      'Pinjaman Pribadi': 5000000,
+      'KPR BTN (Rumah)': 15000000,
       'Kartu Kredit Mandiri': 3000000,
       'Kartu Kredit BRI (Tokopedia)': 10000000
     };
 
     let initialBalances = {};
-    let installments = { 'KPR BTN (Rumah)': 1500000, 'Pinjaman Pribadi': 500000 };
+    let installments = { 'KPR BTN (Rumah)': 1500000, 'Cicilan Kartu Kredit': 500000, 'Tagihan Lainnya': 0 };
     let accounts = {};
     let transactions = [];
     let sheetsUrl = "";
@@ -790,25 +827,78 @@ function doPost(e) {
     // Pagination and layout states
     let visibleCount = 50;
 
-    // Safe Date sanitizer (resolves Z formats and ISO strings into YYYY-MM-DD)
-    function cleanDate(dateStr) {
-      if (!dateStr) return '';
-      const str = String(dateStr);
-      if (str.includes('T')) {
-        return str.split('T')[0];
+    // Safe Date Parser to prevent timezone shifts (Converts "DD-MM-YYYY" or "YYYY-MM-DD" reliably)
+    function parseDMY(dmyStr) {
+      if (!dmyStr) return new Date();
+      const parts = String(dmyStr).trim().split('-');
+      if (parts.length === 3) {
+        // Format DD-MM-YYYY
+        if (parts[2].length === 4) {
+          const day = parseInt(parts[0], 10);
+          const month = parseInt(parts[1], 10) - 1; // index-0
+          const year = parseInt(parts[2], 10);
+          return new Date(year, month, day);
+        }
+        // Format YYYY-MM-DD
+        if (parts[0].length === 4) {
+          const year = parseInt(parts[0], 10);
+          const month = parseInt(parts[1], 10) - 1;
+          const day = parseInt(parts[2], 10);
+          return new Date(year, month, day);
+        }
       }
-      return str.trim();
+      return new Date(dmyStr);
     }
 
-    // Formats database date (YYYY-MM-DD) to user preferred DD-MM-YYYY
-    function formatDateToDMY(dateStr) {
-      if (!dateStr) return '';
-      const cleaned = cleanDate(dateStr);
-      const parts = cleaned.split('-');
+    // Convert "YYYY-MM-DD" input value into standardized "DD-MM-YYYY" for saving
+    function ymdToDmy(ymdStr) {
+      if (!ymdStr) return '';
+      const clean = String(ymdStr).split('T')[0].trim();
+      const parts = clean.split('-');
       if (parts.length === 3) {
-        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+        if (parts[0].length === 2 && parts[2].length === 4) {
+          return clean; // Already DD-MM-YYYY
+        }
+        if (parts[0].length === 4) {
+          return `${parts[2]}-${parts[1]}-${parts[0]}`;
+        }
       }
-      return cleaned;
+      return ymdStr;
+    }
+
+    // Convert "DD-MM-YYYY" back into "YYYY-MM-DD" for HTML Date Inputs
+    function dmyToYmd(dmyStr) {
+      if (!dmyStr) return '';
+      const clean = String(dmyStr).split('T')[0].trim();
+      const parts = clean.split('-');
+      if (parts.length === 3) {
+        if (parts[0].length === 4) {
+          return clean; // Already YYYY-MM-DD
+        }
+        if (parts[2].length === 4) {
+          return `${parts[2]}-${parts[1]}-${parts[0]}`;
+        }
+      }
+      return dmyStr;
+    }
+
+    // Standardize any format (ISO timestamp, UTC, or YYYY-MM-DD) into Indonesian DD-MM-YYYY
+    function sanitizeToDmy(dateStr) {
+      if (!dateStr) return '';
+      let clean = String(dateStr).trim();
+      if (clean.includes('T')) {
+        clean = clean.split('T')[0];
+      }
+      const parts = clean.split('-');
+      if (parts.length === 3) {
+        if (parts[0].length === 4) {
+          return `${parts[2]}-${parts[1]}-${parts[0]}`;
+        }
+        if (parts[0].length === 2 && parts[2].length === 4) {
+          return clean;
+        }
+      }
+      return clean;
     }
 
     // Custom notification system (Responsive safe)
@@ -831,7 +921,6 @@ function doPost(e) {
       }, 3000);
     }
 
-    // Initialize App on Window Load
     window.onload = function () {
       const today = new Date().toISOString().split('T')[0];
       document.getElementById('txDate').value = today;
@@ -845,8 +934,9 @@ function doPost(e) {
       if (savedInst) {
         installments = JSON.parse(savedInst);
       }
-      document.getElementById('install_kpr').value = installments['KPR BTN (Rumah)'] || 1500000;
-      document.getElementById('install_pribadi').value = installments['Pinjaman Pribadi'] || 500000;
+      document.getElementById('install_kpr').value = installments['KPR BTN (Rumah)'] !== undefined ? installments['KPR BTN (Rumah)'] : 1500000;
+      document.getElementById('install_cc').value = installments['Cicilan Kartu Kredit'] !== undefined ? installments['Cicilan Kartu Kredit'] : 500000;
+      document.getElementById('install_others').value = installments['Tagihan Lainnya'] !== undefined ? installments['Tagihan Lainnya'] : 0;
 
       if (sheetsUrl) {
         updateSheetsStatus(true);
@@ -887,7 +977,6 @@ function doPost(e) {
       });
     }
 
-    // Menyimpan saldo awal baru & cicilan bulanan yang diatur oleh user
     async function saveCustomInitialBalances() {
       Object.keys(initialBalances).forEach(key => {
         const inputId = `init_bal_${key.replace(/ /g, '_')}`;
@@ -898,9 +987,10 @@ function doPost(e) {
         }
       });
 
-      // Simpan estimasi cicilan tetap
+      // Simpan estimasi tagihan bulan depan
       installments['KPR BTN (Rumah)'] = parseFloat(document.getElementById('install_kpr').value) || 0;
-      installments['Pinjaman Pribadi'] = parseFloat(document.getElementById('install_pribadi').value) || 0;
+      installments['Cicilan Kartu Kredit'] = parseFloat(document.getElementById('install_cc').value) || 0;
+      installments['Tagihan Lainnya'] = parseFloat(document.getElementById('install_others').value) || 0;
 
       localStorage.setItem('artha_initial_balances', JSON.stringify(initialBalances));
       localStorage.setItem('artha_installments', JSON.stringify(installments));
@@ -913,7 +1003,8 @@ function doPost(e) {
             headers: { 'Content-Type': 'text/plain' },
             body: JSON.stringify({
               action: 'updateBalances',
-              balances: initialBalances
+              balances: initialBalances,
+              nextMonthBills: installments
             })
           });
           showToast("Saldo awal disinkronkan ke Cloud!");
@@ -922,7 +1013,7 @@ function doPost(e) {
           showToast("Gagal kirim ke Google Sheets. Disimpan lokal di HP.", true);
         }
       } else {
-        showToast("Saldo awal & cicilan berhasil diperbarui lokal!");
+        showToast("Saldo awal & tagihan berhasil diperbarui lokal!");
       }
 
       calculateFinanceStates();
@@ -932,10 +1023,11 @@ function doPost(e) {
     // Reset saldo awal ke bawaan default
     async function resetInitialBalances() {
       initialBalances = { ...defaultInitialBalances };
-      installments = { 'KPR BTN (Rumah)': 1500000, 'Pinjaman Pribadi': 500000 };
+      installments = { 'KPR BTN (Rumah)': 1500000, 'Cicilan Kartu Kredit': 500000, 'Tagihan Lainnya': 0 };
 
       document.getElementById('install_kpr').value = 1500000;
-      document.getElementById('install_pribadi').value = 500000;
+      document.getElementById('install_cc').value = 500000;
+      document.getElementById('install_others').value = 0;
 
       renderInitialBalancesEditor();
       localStorage.setItem('artha_initial_balances', JSON.stringify(initialBalances));
@@ -948,7 +1040,8 @@ function doPost(e) {
             headers: { 'Content-Type': 'text/plain' },
             body: JSON.stringify({
               action: 'updateBalances',
-              balances: initialBalances
+              balances: initialBalances,
+              nextMonthBills: installments
             })
           });
         } catch (e) {
@@ -1034,9 +1127,8 @@ function doPost(e) {
       loadLocalTransactions();
     }
 
-    // Local Storage fallback
     function saveLocalTransactions() {
-      transactions.forEach(tx => tx.date = cleanDate(tx.date));
+      transactions.forEach(tx => tx.date = sanitizeToDmy(tx.date));
       localStorage.setItem('artha_tx_data', JSON.stringify(transactions));
       calculateFinanceStates();
     }
@@ -1045,7 +1137,7 @@ function doPost(e) {
       const localData = localStorage.getItem('artha_tx_data');
       if (localData) {
         transactions = JSON.parse(localData);
-        transactions.forEach(tx => tx.date = cleanDate(tx.date));
+        transactions.forEach(tx => tx.date = sanitizeToDmy(tx.date));
       } else {
         transactions = [];
       }
@@ -1063,7 +1155,7 @@ function doPost(e) {
           const txData = result.transactions || [];
           transactions = txData.map(row => ({
             id: row.id || row.ID || "0",
-            date: cleanDate(row.date || row.Tanggal),
+            date: sanitizeToDmy(row.date || row.Tanggal),
             type: row.type || row.Tipe,
             amount: parseFloat(row.amount || row.Jumlah || 0),
             account: row.account || row.Dompet,
@@ -1081,9 +1173,23 @@ function doPost(e) {
               headers: { 'Content-Type': 'text/plain' },
               body: JSON.stringify({
                 action: 'updateBalances',
-                balances: initialBalances
+                balances: initialBalances,
+                nextMonthBills: installments
               })
             });
+          }
+
+          const billsData = result.nextMonthBills || {};
+          if (Object.keys(billsData).length > 0) {
+            installments = {
+              'KPR BTN (Rumah)': Number(billsData['KPR BTN (Rumah)']) || 0,
+              'Cicilan Kartu Kredit': Number(billsData['Cicilan Kartu Kredit']) || 0,
+              'Tagihan Lainnya': Number(billsData['Tagihan Lainnya']) || 0
+            };
+            localStorage.setItem('artha_installments', JSON.stringify(installments));
+            document.getElementById('install_kpr').value = installments['KPR BTN (Rumah)'];
+            document.getElementById('install_cc').value = installments['Cicilan Kartu Kredit'];
+            document.getElementById('install_others').value = installments['Tagihan Lainnya'];
           }
 
           calculateFinanceStates();
@@ -1113,7 +1219,7 @@ function doPost(e) {
           body: JSON.stringify({
             action: 'add',
             id: tx.id,
-            date: cleanDate(tx.date),
+            date: sanitizeToDmy(tx.date),
             type: tx.type,
             amount: tx.amount,
             account: tx.account,
@@ -1147,7 +1253,7 @@ function doPost(e) {
           body: JSON.stringify({
             action: 'update',
             id: tx.id,
-            date: cleanDate(tx.date),
+            date: sanitizeToDmy(tx.date),
             type: tx.type,
             amount: tx.amount,
             account: tx.account,
@@ -1217,7 +1323,7 @@ function doPost(e) {
 
       // Populate locked inputs
       const dateInput = document.getElementById('txDate');
-      dateInput.value = cleanDate(tx.date);
+      dateInput.value = dmyToYmd(tx.date);
       dateInput.disabled = true; // No. ID and date shouldn't change
 
       // Add locked message visual aid
@@ -1317,16 +1423,10 @@ function doPost(e) {
       const nextMonthIndex = (new Date().getMonth() + 1) % 12;
       document.getElementById('nextMonthLabel').innerText = nextMonthNames[nextMonthIndex];
 
-      // 1. Paylater & CC Outstanding Balances
-      const paylatersCC = ['Gopay Letter', 'Kredivo', 'Credinex', 'Kartu Kredit Mandiri', 'Kartu Kredit BRI (Tokopedia)'];
-      let nextPaymentSum = 0;
-      paylatersCC.forEach(p => {
-        nextPaymentSum += (accounts[p] || 0);
-      });
-
-      // 2. Add Fixed Installments (KPR and Private Loan)
-      nextPaymentSum += (installments['KPR BTN (Rumah)'] || 0);
-      nextPaymentSum += (installments['Pinjaman Pribadi'] || 0);
+      // Cukup mengikuti angka nominal yang dapat di input di modal pengaturan secara murni
+      let nextPaymentSum = (installments['KPR BTN (Rumah)'] || 0) +
+        (installments['Cicilan Kartu Kredit'] || 0) +
+        (installments['Tagihan Lainnya'] || 0);
 
       document.getElementById('nextPaymentTotal').innerText = formatIDR(nextPaymentSum);
     }
@@ -1341,11 +1441,11 @@ function doPost(e) {
       if (transactions.length > 0) {
         let earliestStr = transactions[0].date;
         transactions.forEach(t => {
-          if (new Date(cleanDate(t.date)) < new Date(cleanDate(earliestStr))) {
+          if (parseDMY(t.date) < parseDMY(earliestStr)) {
             earliestStr = t.date;
           }
         });
-        startDate = new Date(cleanDate(earliestStr));
+        startDate = parseDMY(earliestStr);
       }
 
       const currentYear = startDate.getFullYear() || 2026;
@@ -1393,7 +1493,7 @@ function doPost(e) {
       let monthExpense = 0;
 
       transactions.forEach(tx => {
-        const txDate = new Date(cleanDate(tx.date));
+        const txDate = parseDMY(tx.date);
         const isThisMonth = txDate.getMonth() === now.getMonth() && txDate.getFullYear() === now.getFullYear();
 
         if (isThisMonth) {
@@ -1573,8 +1673,8 @@ function doPost(e) {
         const matchType = (typeFilter === 'All') || (tx.type === typeFilter);
         return matchType;
       }).sort((a, b) => {
-        const dateA = new Date(cleanDate(a.date));
-        const dateB = new Date(cleanDate(b.date));
+        const dateA = parseDMY(a.date);
+        const dateB = parseDMY(b.date);
         if (dateB - dateA !== 0) {
           return dateB - dateA;
         }
@@ -1628,8 +1728,8 @@ function doPost(e) {
           }
         }
 
-        // Strictly formats display date to DD-MM-YYYY
-        const displayDate = formatDateToDMY(tx.date);
+        // Display date is already in DD-MM-YYYY format
+        const displayDate = tx.date;
 
         // Desktop Table HTML
         tbody.innerHTML += `
@@ -1874,7 +1974,8 @@ function doPost(e) {
             }
           });
           const nextId = maxId + 1;
-          const date = cleanDate(document.getElementById('txDate').value);
+          const rawDate = document.getElementById('txDate').value;
+          const date = ymdToDmy(rawDate); // Standardize to DD-MM-YYYY
 
           const newTx = {
             id: String(nextId),

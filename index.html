@@ -9,8 +9,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- ChartJS -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=300;400;500;600;700;800&display=swap');
 
@@ -89,10 +87,10 @@
               <span>Halo Finansial Cerdas!</span> 💸
             </h1>
             <p class="text-slate-500 mt-2 text-xs md:text-sm leading-relaxed">
-              Kelola gabungan <strong class="text-slate-700">Tunai</strong>, <strong class="text-slate-700">Rekening
-                Bank</strong>, <strong class="text-slate-700">E-Wallet</strong>, serta kontrol penuh cicilan <strong
+              Pantau saldo <strong class="text-slate-700">Tunai</strong>, <strong class="text-slate-700">Tabungan
+                Bank</strong>, <strong class="text-slate-700">E-Wallet</strong>, serta kontrol penuh tagihan <strong
                 class="text-slate-700">KPR</strong>, <strong class="text-slate-700">Kartu Kredit</strong>, dan <strong
-                class="text-slate-700">Paylater</strong> agar terhindar dari bocor halus finansial.
+                class="text-slate-700">Paylater</strong> secara transparan tanpa khawatir bocor halus.
             </p>
           </div>
           <!-- Quick Actions Desktop View -->
@@ -129,11 +127,11 @@
           </div>
           <div class="grid grid-cols-2 gap-2 md:gap-4 mt-4 pt-4 border-t border-white/10">
             <div>
-              <span class="text-[9px] md:text-[10px] text-slate-400 block uppercase">Saldo Kas, Bank & Piutang</span>
+              <span class="text-[9px] md:text-[10px] text-slate-400 block uppercase">Saldo Aktif & Piutang</span>
               <span id="totalActiveBalance" class="text-xs md:text-sm font-bold text-white">Rp 0</span>
             </div>
             <div>
-              <span class="text-[9px] md:text-[10px] text-rose-300 block uppercase">Total Beban Hutang</span>
+              <span class="text-[9px] md:text-[10px] text-rose-300 block uppercase">Total Kewajiban</span>
               <span id="totalDebt" class="text-xs md:text-sm font-bold text-rose-400">Rp 0</span>
             </div>
           </div>
@@ -142,108 +140,105 @@
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        <!-- Keuangan Bulanan & Rasio Sehat (50/30/20) -->
+        <!-- Run-Rate Daily Comparison Visualizer (Two big circles) -->
         <div class="bg-white rounded-2xl p-5 md:p-6 shadow-sm border border-slate-100 col-span-1 lg:col-span-2">
-          <div class="flex justify-between items-center mb-6">
+          <div class="flex justify-between items-center mb-4">
             <div>
-              <h3 class="text-base md:text-lg font-bold text-slate-900">Alokasi Rasio Pengeluaran</h3>
-              <p class="text-[10px] md:text-xs text-slate-500">Target Ideal: 50% Kebutuhan, 30% Keinginan, 20%
-                Tabungan/Utang</p>
-            </div>
-            <div class="px-2.5 py-1 bg-indigo-50 text-indigo-600 rounded-full text-[10px] md:text-xs font-semibold">
-              Bulan Ini
+              <h3 class="text-base md:text-lg font-bold text-slate-900">Performa Run-Rate Rata-Rata Harian</h3>
+              <p class="text-[10px] md:text-xs text-slate-500">Estimasi rasio dari awal pencatatan transaksi hingga
+                akhir tahun (31 Des)</p>
             </div>
           </div>
 
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div class="flex flex-col items-center justify-center">
-              <div class="relative w-36 h-36 md:w-44 md:h-44">
-                <canvas id="ratioChart"></canvas>
+          <div class="flex flex-col sm:flex-row items-center justify-around py-6 gap-6">
+            <!-- Red Circle (Expense) -->
+            <div class="flex flex-col items-center">
+              <div id="circleExpense"
+                class="rounded-full bg-gradient-to-tr from-rose-500 to-red-600 text-white flex flex-col items-center justify-center shadow-lg shadow-red-500/25 transition-all duration-500 overflow-hidden"
+                style="width: 130px; height: 130px;">
+                <span class="text-[10px] font-bold uppercase tracking-wider opacity-90">Pengeluaran</span>
+                <span id="valAvgExpense" class="text-xs md:text-sm font-black mt-1">Rp 0</span>
+                <span class="text-[9px] opacity-75">/ hari</span>
               </div>
+              <span class="text-[11px] font-bold text-rose-600 mt-2.5">Rata-rata Keluar</span>
             </div>
-            <div class="space-y-3.5 flex flex-col justify-center">
-              <div>
-                <div class="flex justify-between text-[11px] md:text-xs mb-1">
-                  <span class="flex items-center text-slate-600 font-medium">
-                    <span class="w-2.5 h-2.5 bg-blue-600 rounded-full mr-1.5"></span> Kebutuhan (Needs)
-                  </span>
-                  <span id="needsPercent" class="font-bold text-slate-800">0%</span>
-                </div>
-                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                  <div id="needsProgress" class="bg-blue-600 h-2 rounded-full" style="width: 0%"></div>
-                </div>
-              </div>
 
-              <div>
-                <div class="flex justify-between text-[11px] md:text-xs mb-1">
-                  <span class="flex items-center text-slate-600 font-medium">
-                    <span class="w-2.5 h-2.5 bg-rose-500 rounded-full mr-1.5"></span> Keinginan (Wants)
-                  </span>
-                  <span id="wantsPercent" class="font-bold text-slate-800">0%</span>
-                </div>
-                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                  <div id="wantsProgress" class="bg-rose-500 h-2 rounded-full" style="width: 0%"></div>
-                </div>
+            <!-- Green Circle (Income) -->
+            <div class="flex flex-col items-center">
+              <div id="circleIncome"
+                class="rounded-full bg-gradient-to-tr from-emerald-500 to-green-600 text-white flex flex-col items-center justify-center shadow-lg shadow-green-500/25 transition-all duration-500 overflow-hidden"
+                style="width: 130px; height: 130px;">
+                <span class="text-[10px] font-bold uppercase tracking-wider opacity-90">Penghasilan</span>
+                <span id="valAvgIncome" class="text-xs md:text-sm font-black mt-1">Rp 0</span>
+                <span class="text-[9px] opacity-75">/ hari</span>
               </div>
-
-              <div>
-                <div class="flex justify-between text-[11px] md:text-xs mb-1">
-                  <span class="flex items-center text-slate-600 font-medium">
-                    <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full mr-1.5"></span> Tabungan / KPR
-                  </span>
-                  <span id="savingsPercent" class="font-bold text-slate-800">0%</span>
-                </div>
-                <div class="w-full bg-slate-100 h-2 rounded-full overflow-hidden">
-                  <div id="savingsProgress" class="bg-emerald-500 h-2 rounded-full" style="width: 0%"></div>
-                </div>
-              </div>
+              <span class="text-[11px] font-bold text-emerald-600 mt-2.5">Rata-rata Masuk</span>
             </div>
           </div>
         </div>
 
-        <!-- Monthly Health Summary Card (Ringkasan Widget) -->
-        <div id="monthlyHealthCard"
-          class="bg-white rounded-2xl p-5 md:p-6 shadow-sm border border-slate-100 flex flex-col justify-between">
-          <div>
-            <div class="flex items-center justify-between mb-4">
-              <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Ringkasan Bulan Ini</span>
-              <i class="fa-solid fa-calendar-days text-blue-600"></i>
+        <!-- Next Payment Planner & Monthly Summary Box -->
+        <div class="space-y-6">
+          <!-- Next Payment Box -->
+          <div
+            class="bg-gradient-to-br from-indigo-950 to-indigo-900 text-white rounded-2xl p-5 shadow-sm border border-indigo-800">
+            <div class="flex justify-between items-center mb-3">
+              <span class="text-xs font-bold uppercase tracking-wider text-indigo-300">Next Payment Planner</span>
+              <span class="p-1.5 bg-indigo-800 rounded-lg"><i
+                  class="fa-solid fa-calendar-check text-xs text-indigo-300"></i></span>
             </div>
-
-            <div class="space-y-4">
-              <!-- Income Summary -->
-              <div class="flex justify-between items-center py-2 border-b border-slate-100">
-                <span class="text-xs font-semibold text-slate-600 flex items-center gap-1.5">
-                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Pemasukan
-                </span>
-                <span id="monthlyIncomeVal" class="text-xs font-extrabold text-emerald-600">Rp 0</span>
-              </div>
-
-              <!-- Expenses Summary -->
-              <div class="flex justify-between items-center py-2 border-b border-slate-100">
-                <span class="text-xs font-semibold text-slate-600 flex items-center gap-1.5">
-                  <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Pengeluaran
-                </span>
-                <span id="monthlyExpenseVal" class="text-xs font-extrabold text-rose-600">Rp 0</span>
-              </div>
-
-              <!-- Net Surplus/Deficit -->
-              <div class="flex justify-between items-center py-3 bg-slate-50 px-3 rounded-xl border border-slate-100">
-                <span class="text-xs font-bold text-slate-700">Surplus / Minus:</span>
-                <span id="monthlySurplusVal" class="text-sm font-black text-emerald-600">Rp 0</span>
-              </div>
-            </div>
+            <p class="text-[10px] text-indigo-200">Estimasi dana pelunasan wajib di bulan <strong id="nextMonthLabel"
+                class="text-white">Jatuh Tempo</strong>:</p>
+            <h3 id="nextPaymentTotal" class="text-2xl font-black text-amber-300 mt-2">Rp 0</h3>
+            <p class="text-[9px] text-indigo-200/80 mt-1">*Gabungan pemakaian limit berjalan + estimasi cicilan bulanan
+              tetap Anda.</p>
           </div>
 
-          <!-- Health Status Indicator Box -->
-          <div id="healthStatusAlert"
-            class="mt-4 p-3.5 rounded-xl border flex items-center space-x-3 transition-colors duration-200">
-            <div id="healthStatusIcon" class="w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0">
-              <!-- Populated dynamically -->
-            </div>
+          <!-- Monthly Surplus Summary Card (Ringkasan Widget) -->
+          <div id="monthlyHealthCard"
+            class="bg-white rounded-2xl p-5 shadow-sm border border-slate-100 flex flex-col justify-between">
             <div>
-              <h4 id="healthStatusTitle" class="text-xs font-bold">Mengalkulasi...</h4>
-              <p id="healthStatusDesc" class="text-[10px] text-slate-500 mt-0.5">Memproses data...</p>
+              <div class="flex items-center justify-between mb-4">
+                <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Ringkasan Bulan Ini</span>
+                <i class="fa-solid fa-calendar-days text-blue-600"></i>
+              </div>
+
+              <div class="space-y-3">
+                <!-- Income Summary -->
+                <div class="flex justify-between items-center py-2 border-b border-slate-100">
+                  <span class="text-xs font-semibold text-slate-600 flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Pemasukan
+                  </span>
+                  <span id="monthlyIncomeVal" class="text-xs font-extrabold text-emerald-600">Rp 0</span>
+                </div>
+
+                <!-- Expenses Summary -->
+                <div class="flex justify-between items-center py-2 border-b border-slate-100">
+                  <span class="text-xs font-semibold text-slate-600 flex items-center gap-1.5">
+                    <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span> Pengeluaran
+                  </span>
+                  <span id="monthlyExpenseVal" class="text-xs font-extrabold text-rose-600">Rp 0</span>
+                </div>
+
+                <!-- Net Surplus/Deficit -->
+                <div
+                  class="flex justify-between items-center py-2.5 bg-slate-50 px-3 rounded-xl border border-slate-100">
+                  <span class="text-xs font-bold text-slate-700">Surplus / Minus:</span>
+                  <span id="monthlySurplusVal" class="text-sm font-black text-emerald-600">Rp 0</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Health Status Indicator Box -->
+            <div id="healthStatusAlert"
+              class="mt-4 p-3 rounded-xl border flex items-center space-x-3 transition-colors duration-200">
+              <div id="healthStatusIcon" class="w-8 h-8 rounded-full flex items-center justify-center text-sm shrink-0">
+                <!-- Populated dynamically -->
+              </div>
+              <div>
+                <h4 id="healthStatusTitle" class="text-xs font-bold">Mengalkulasi...</h4>
+                <p id="healthStatusDesc" class="text-[9px] text-slate-500 mt-0.5">Memproses data...</p>
+              </div>
             </div>
           </div>
         </div>
@@ -300,7 +295,7 @@
             <h3 class="text-base md:text-lg font-bold text-slate-900 flex items-center gap-2">
               <i class="fa-solid fa-clock-rotate-left text-indigo-600"></i> Histori Transaksi
             </h3>
-            <p class="text-[10px] md:text-xs text-slate-500">Daftar transaksi Anda (Paginasi: 50 data, diurutkan dari
+            <p class="text-[10px] md:text-xs text-slate-500">Daftar transaksi Anda (Paginasi: 50 data, berurutan dari
               yang terbaru).</p>
           </div>
           <!-- Filters -->
@@ -313,15 +308,6 @@
               <option value="Transfer">Transfer Intern</option>
               <option value="Bayar Pinjol">Bayar Kredit/Cicilan</option>
             </select>
-            <select id="filterCategory" onchange="visibleCount = 50; renderTransactions()"
-              class="text-[11px] md:text-xs bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1 sm:flex-none font-semibold">
-              <option value="All">Semua Kategori</option>
-              <option value="Kebutuhan">Kebutuhan</option>
-              <option value="Keinginan">Keinginan</option>
-              <option value="Tabungan/Investasi">Tabungan/KPR</option>
-              <option value="Bayar Utang">Bayar Utang</option>
-              <option value="Transfer">Transfer</option>
-            </select>
           </div>
         </div>
 
@@ -333,7 +319,7 @@
               <tr class="bg-slate-50/75 text-slate-500 text-xs font-semibold border-b border-slate-100">
                 <th class="px-6 py-4">No. ID</th>
                 <th class="px-6 py-4">Tanggal</th>
-                <th class="px-6 py-4">Tipe & Kategori</th>
+                <th class="px-6 py-4">Tipe</th>
                 <th class="px-6 py-4">Dompet/Rekening</th>
                 <th class="px-6 py-4">Keterangan</th>
                 <th class="px-6 py-4 text-right">Jumlah</th>
@@ -479,17 +465,6 @@
           </div>
         </div>
 
-        <!-- Kategori Keuangan (Needs / Wants / Saving) -->
-        <div id="categoryContainer">
-          <label class="block text-xs font-bold text-slate-600 mb-1">Alokasi Rasio</label>
-          <select id="txCategory"
-            class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-700">
-            <option value="Kebutuhan">Kebutuhan Pokok (Needs) - Makan, Cicilan/KPR Pokok, Listrik, Air</option>
-            <option value="Keinginan">Keinginan/Gaya Hidup (Wants) - Kopi, Libuhan, Netflix</option>
-            <option value="Tabungan/Investasi">Tabungan, Investasi, Dana Darurat</option>
-          </select>
-        </div>
-
         <!-- Deskripsi / Keterangan -->
         <div>
           <label class="block text-xs font-bold text-slate-600 mb-1">Keterangan / Deskripsi</label>
@@ -525,11 +500,11 @@
       <div class="flex border-b border-slate-100 bg-slate-50 text-xs font-bold">
         <button id="tabSheetsBtn" onclick="switchSetupTab('sheets')"
           class="flex-1 py-3 text-center border-b-2 border-blue-600 text-blue-600">
-          <i class="fa-solid fa-database mr-1.5"></i> Google Sheets (Terbaru)
+          <i class="fa-solid fa-database mr-1.5"></i> Google Sheets (6 Kolom Baru)
         </button>
         <button id="tabBalancesBtn" onclick="switchSetupTab('balances')"
           class="flex-1 py-3 text-center border-b-2 border-transparent text-slate-500 hover:text-slate-800">
-          <i class="fa-solid fa-wallet mr-1.5"></i> Atur Saldo Awal
+          <i class="fa-solid fa-wallet mr-1.5"></i> Atur Saldo & Cicilan
         </button>
       </div>
 
@@ -539,10 +514,10 @@
         <div id="tabContentSheets" class="space-y-4">
           <div
             class="bg-emerald-50 border border-emerald-100 rounded-xl p-4 text-[11px] md:text-xs text-emerald-800 space-y-2">
-            <p class="font-bold"><i class="fa-solid fa-circle-check"></i> Kode Google Apps Script Versi Terbaru
-              (Mendukung Edit & Hapus Baris!)</p>
-            <p>Silakan salin ulang kode Google Apps Script di bawah ke spreadsheet Anda. Perbaikan ini mengoptimalkan
-              fungsi edit dan hapus baris spesifik tanpa merusak susunan data.</p>
+            <p class="font-bold"><i class="fa-solid fa-circle-check"></i> Kode Google Apps Script 6 Kolom (Tanpa
+              Kategori)</p>
+            <p>Silakan salin ulang kode Google Apps Script di bawah ini ke spreadsheet Anda. Kolom kategori telah
+              dihapus untuk performa optimal.</p>
           </div>
 
           <!-- Setup Steps -->
@@ -570,10 +545,10 @@
 function doGet(e) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   
-  // Ambil tab Transaksi
+  // Ambil tab Transaksi (6 Kolom)
   var sheetTx = ss.getSheetByName("Transaksi") || ss.insertSheet("Transaksi");
   if (sheetTx.getLastRow() === 0) {
-    sheetTx.appendRow(["id", "date", "type", "amount", "account", "category", "note"]);
+    sheetTx.appendRow(["id", "date", "type", "amount", "account", "note"]);
   }
   var dataTx = sheetTx.getDataRange().getValues();
   var headersTx = dataTx[0];
@@ -624,7 +599,6 @@ function doPost(e) {
       params.type,
       params.amount,
       params.account,
-      params.category,
       params.note
     ]);
     return ContentService.createTextOutput(JSON.stringify({status: "success"})).setMimeType(ContentService.MimeType.JSON);
@@ -635,14 +609,13 @@ function doPost(e) {
       var data = sheetTx.getDataRange().getValues();
       for (var i = 1; i < data.length; i++) {
         if (data[i][0].toString() === params.id.toString()) {
-          // Update baris tertentu dengan rapi (tanpa ubah ID)
-          sheetTx.getRange(i + 1, 1, 1, 7).setValues([[
+          // Update baris tertentu dengan rapi
+          sheetTx.getRange(i + 1, 1, 1, 6).setValues([[
             params.id,
             params.date,
             params.type,
             params.amount,
             params.account,
-            params.category,
             params.note
           ]]);
           break;
@@ -667,7 +640,7 @@ function doPost(e) {
   } else if (params.action === "clear") {
     var sheetTx = ss.getSheetByName("Transaksi");
     if (sheetTx && sheetTx.getLastRow() > 1) {
-      sheetTx.getRange(2, 1, sheetTx.getLastRow() - 1, 7).clearContent();
+      sheetTx.getRange(2, 1, sheetTx.getLastRow() - 1, 6).clearContent();
     }
     return ContentService.createTextOutput(JSON.stringify({status: "success"})).setMimeType(ContentService.MimeType.JSON);
     
@@ -709,15 +682,40 @@ function doPost(e) {
           </div>
         </div>
 
-        <!-- TAB 2: EDIT SALDO AWAL -->
+        <!-- TAB 2: EDIT SALDO AWAL & ESTIMASI CICILAN -->
         <div id="tabContentBalances" class="hidden space-y-4">
           <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 text-[11px] md:text-xs text-blue-800">
-            <p class="font-bold mb-1"><i class="fa-solid fa-info-circle"></i> Sesuaikan Saldo Nyata Anda</p>
-            <p>Ubah angka di bawah ini sesuai dengan jumlah dana rill Anda saat ini. Perubahan saldo awal ini akan
-              disinkronkan langsung ke Google Sheets (jika terhubung).</p>
+            <p class="font-bold mb-1"><i class="fa-solid fa-info-circle"></i> Atur Saldo Awal & Estimasi Cicilan Bulanan
+            </p>
+            <p>Silakan sesuaikan saldo nyata Anda. Untuk KPR dan Pinjaman Pribadi, masukkan nilai estimasi cicilan tetap
+              Anda per bulan untuk memproyeksikan tagihan *Next Payment* bulan depan.</p>
           </div>
 
+          <!-- Saldo Awal Fields -->
+          <h4 class="font-bold text-xs uppercase text-slate-500 border-b pb-1">Saldo Akun Awal</h4>
           <div id="initialBalancesFields" class="grid grid-cols-1 md:grid-cols-2 gap-3.5"></div>
+
+          <!-- Estimasi Cicilan Bulanan Fields (Option A) -->
+          <h4 class="font-bold text-xs uppercase text-slate-500 border-b pb-1 pt-3">Estimasi Cicilan Bulanan Tetap (Next
+            Payment)</h4>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Cicilan KPR BTN (Rumah)</label>
+              <div class="relative">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] font-bold text-slate-400">Rp</span>
+                <input type="number" id="install_kpr" value="1500000"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-2 py-1.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-blue-500">
+              </div>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 mb-0.5">Cicilan Pinjaman Pribadi</label>
+              <div class="relative">
+                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-[11px] font-bold text-slate-400">Rp</span>
+                <input type="number" id="install_pribadi" value="500000"
+                  class="w-full bg-slate-50 border border-slate-200 rounded-lg pl-8 pr-2 py-1.5 text-xs font-semibold focus:outline-none focus:ring-1 focus:ring-blue-500">
+              </div>
+            </div>
+          </div>
 
           <div class="flex gap-2 pt-4 border-t border-slate-100">
             <button onclick="saveCustomInitialBalances()"
@@ -744,7 +742,7 @@ function doPost(e) {
 
   <!-- START OF JAVASCRIPT CODE ENGINE -->
   <script>
-    const appId = typeof __app_id !== 'undefined' ? __app_id : 'artha-personal-tracker';
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'artha-personal-tracker-v2';
 
     // default initial account balances including Credit Cards and receivable account
     const defaultInitialBalances = {
@@ -753,7 +751,7 @@ function doPost(e) {
       'BRI': 2500000,
       'Jago': 1200000,
       'BTN': 8000000,
-      'Hutang Orang Lain (Piutang)': 0, // NEW Receivable Account (Asset)
+      'Hutang Orang Lain (Piutang)': 0, // Receivable Account (Asset)
       'Dana': 350000,
       'Gopay': 400000,
       'Paypal': 1500000,
@@ -771,19 +769,19 @@ function doPost(e) {
     // Static total limits for paylaters & credit cards
     const paylaterLimits = {
       'Gopay Letter': 3000000,
-      'Kredivo': 10000000,
-      'Credinex': 10000000,
+      'Kredivo': 5000000,
+      'Credinex': 2000000,
       'Pinjaman Pribadi': 10000000,
-      'KPR BTN (Rumah)': 162000000,
-      'Kartu Kredit Mandiri': 3000000,
+      'KPR BTN (Rumah)': 350000000,
+      'Kartu Kredit Mandiri': 15000000,
       'Kartu Kredit BRI (Tokopedia)': 10000000
     };
 
     let initialBalances = {};
+    let installments = { 'KPR BTN (Rumah)': 1500000, 'Pinjaman Pribadi': 500000 };
     let accounts = {};
     let transactions = [];
     let sheetsUrl = "";
-    let ratioChart = null;
 
     // Form edit modes state
     let isEditMode = false;
@@ -842,6 +840,14 @@ function doPost(e) {
       sheetsUrl = localStorage.getItem('artha_sheets_url') || "";
       document.getElementById('sheetsWebUrl').value = sheetsUrl;
 
+      // Load Saved Installments (Option A)
+      const savedInst = localStorage.getItem('artha_installments');
+      if (savedInst) {
+        installments = JSON.parse(savedInst);
+      }
+      document.getElementById('install_kpr').value = installments['KPR BTN (Rumah)'] || 1500000;
+      document.getElementById('install_pribadi').value = installments['Pinjaman Pribadi'] || 500000;
+
       if (sheetsUrl) {
         updateSheetsStatus(true);
         fetchTransactionsFromSheets();
@@ -881,15 +887,23 @@ function doPost(e) {
       });
     }
 
-    // Menyimpan saldo awal baru yang diatur oleh user
+    // Menyimpan saldo awal baru & cicilan bulanan yang diatur oleh user
     async function saveCustomInitialBalances() {
       Object.keys(initialBalances).forEach(key => {
         const inputId = `init_bal_${key.replace(/ /g, '_')}`;
-        const val = parseFloat(document.getElementById(inputId).value) || 0;
-        initialBalances[key] = val;
+        const elem = document.getElementById(inputId);
+        if (elem) {
+          const val = parseFloat(elem.value) || 0;
+          initialBalances[key] = val;
+        }
       });
 
+      // Simpan estimasi cicilan tetap
+      installments['KPR BTN (Rumah)'] = parseFloat(document.getElementById('install_kpr').value) || 0;
+      installments['Pinjaman Pribadi'] = parseFloat(document.getElementById('install_pribadi').value) || 0;
+
       localStorage.setItem('artha_initial_balances', JSON.stringify(initialBalances));
+      localStorage.setItem('artha_installments', JSON.stringify(installments));
 
       if (sheetsUrl) {
         showToast("Mensinkronkan saldo awal ke Google Sheets...");
@@ -908,7 +922,7 @@ function doPost(e) {
           showToast("Gagal kirim ke Google Sheets. Disimpan lokal di HP.", true);
         }
       } else {
-        showToast("Saldo awal berhasil diperbarui lokal!");
+        showToast("Saldo awal & cicilan berhasil diperbarui lokal!");
       }
 
       calculateFinanceStates();
@@ -918,8 +932,14 @@ function doPost(e) {
     // Reset saldo awal ke bawaan default
     async function resetInitialBalances() {
       initialBalances = { ...defaultInitialBalances };
+      installments = { 'KPR BTN (Rumah)': 1500000, 'Pinjaman Pribadi': 500000 };
+
+      document.getElementById('install_kpr').value = 1500000;
+      document.getElementById('install_pribadi').value = 500000;
+
       renderInitialBalancesEditor();
       localStorage.setItem('artha_initial_balances', JSON.stringify(initialBalances));
+      localStorage.setItem('artha_installments', JSON.stringify(installments));
 
       if (sheetsUrl) {
         try {
@@ -1016,7 +1036,6 @@ function doPost(e) {
 
     // Local Storage fallback
     function saveLocalTransactions() {
-      // Clean dates on all saved records to avoid ISO errors
       transactions.forEach(tx => tx.date = cleanDate(tx.date));
       localStorage.setItem('artha_tx_data', JSON.stringify(transactions));
       calculateFinanceStates();
@@ -1026,7 +1045,6 @@ function doPost(e) {
       const localData = localStorage.getItem('artha_tx_data');
       if (localData) {
         transactions = JSON.parse(localData);
-        // Clean retrieved dates
         transactions.forEach(tx => tx.date = cleanDate(tx.date));
       } else {
         transactions = [];
@@ -1045,11 +1063,10 @@ function doPost(e) {
           const txData = result.transactions || [];
           transactions = txData.map(row => ({
             id: row.id || row.ID || "0",
-            date: cleanDate(row.date || row.Tanggal), // Standardizing the dates strictly
+            date: cleanDate(row.date || row.Tanggal),
             type: row.type || row.Tipe,
             amount: parseFloat(row.amount || row.Jumlah || 0),
             account: row.account || row.Dompet,
-            category: row.category || row.Kategori,
             note: row.note || row.Keterangan
           }));
 
@@ -1100,7 +1117,6 @@ function doPost(e) {
             type: tx.type,
             amount: tx.amount,
             account: tx.account,
-            category: tx.category,
             note: tx.note
           })
         });
@@ -1135,7 +1151,6 @@ function doPost(e) {
             type: tx.type,
             amount: tx.amount,
             account: tx.account,
-            category: tx.category,
             note: tx.note
           })
         });
@@ -1229,9 +1244,6 @@ function doPost(e) {
         }
       } else {
         document.getElementById('txAccount').value = tx.account;
-        if (tx.type === 'Pengeluaran') {
-          document.getElementById('txCategory').value = tx.category;
-        }
       }
     }
 
@@ -1241,8 +1253,6 @@ function doPost(e) {
       transactions.forEach(tx => {
         const amt = parseFloat(tx.amount);
 
-        // Pinjaman Pribadi is a debt we owe (Liability). Hutang Orang Lain (Piutang) is an asset.
-        // Filter specifically ensures "Piutang" is treated as active asset and not debt.
         const isDebtAccount = tx.account.includes('Letter') ||
           tx.account.includes('Kredivo') ||
           tx.account.includes('Credinex') ||
@@ -1295,9 +1305,85 @@ function doPost(e) {
       });
 
       renderBalances();
-      renderRatioChart();
+      calculateNextPayment();
+      calculateRunRates();
       renderTransactions();
       calculateMonthlyHealthStatus();
+    }
+
+    // Calculate Next Payment Planner (Option A)
+    function calculateNextPayment() {
+      const nextMonthNames = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+      const nextMonthIndex = (new Date().getMonth() + 1) % 12;
+      document.getElementById('nextMonthLabel').innerText = nextMonthNames[nextMonthIndex];
+
+      // 1. Paylater & CC Outstanding Balances
+      const paylatersCC = ['Gopay Letter', 'Kredivo', 'Credinex', 'Kartu Kredit Mandiri', 'Kartu Kredit BRI (Tokopedia)'];
+      let nextPaymentSum = 0;
+      paylatersCC.forEach(p => {
+        nextPaymentSum += (accounts[p] || 0);
+      });
+
+      // 2. Add Fixed Installments (KPR and Private Loan)
+      nextPaymentSum += (installments['KPR BTN (Rumah)'] || 0);
+      nextPaymentSum += (installments['Pinjaman Pribadi'] || 0);
+
+      document.getElementById('nextPaymentTotal').innerText = formatIDR(nextPaymentSum);
+    }
+
+    // Calculate and Draw Run-Rate harian (Merah vs Hijau)
+    function calculateRunRates() {
+      let totalIncome = 0;
+      let totalExpense = 0;
+
+      // Find earliest transaction date
+      let startDate = new Date();
+      if (transactions.length > 0) {
+        let earliestStr = transactions[0].date;
+        transactions.forEach(t => {
+          if (new Date(cleanDate(t.date)) < new Date(cleanDate(earliestStr))) {
+            earliestStr = t.date;
+          }
+        });
+        startDate = new Date(cleanDate(earliestStr));
+      }
+
+      const currentYear = startDate.getFullYear() || 2026;
+      const endDate = new Date(currentYear, 11, 31); // 31 December of current year
+
+      // Calculate total days between startDate and 31 Dec
+      const oneDay = 1000 * 60 * 60 * 24;
+      const totalDays = Math.max(1, Math.round((endDate - startDate) / oneDay) + 1);
+
+      // Sum Income vs Expense
+      transactions.forEach(tx => {
+        if (tx.type === 'Pemasukan') {
+          totalIncome += tx.amount;
+        } else if (tx.type === 'Pengeluaran') {
+          totalExpense += tx.amount;
+        }
+      });
+
+      const avgIncome = Math.round(totalIncome / totalDays);
+      const avgExpense = Math.round(totalExpense / totalDays);
+
+      document.getElementById('valAvgIncome').innerText = formatIDR(avgIncome);
+      document.getElementById('valAvgExpense').innerText = formatIDR(avgExpense);
+
+      // Dynamic Sizing Circles
+      const circleExpense = document.getElementById('circleExpense');
+      const circleIncome = document.getElementById('circleIncome');
+
+      const maxVal = Math.max(avgIncome, avgExpense, 1);
+
+      // Scaled diameters (Min size 100px, Max 160px for premium feel)
+      const expenseDiameter = Math.max(100, Math.round((avgExpense / maxVal) * 160));
+      const incomeDiameter = Math.max(100, Math.round((avgIncome / maxVal) * 160));
+
+      circleExpense.style.width = `${expenseDiameter}px`;
+      circleExpense.style.height = `${expenseDiameter}px`;
+      circleIncome.style.width = `${incomeDiameter}px`;
+      circleIncome.style.height = `${incomeDiameter}px`;
     }
 
     // Calculate and display monthly finance health (Surplus vs Deficit)
@@ -1335,7 +1421,7 @@ function doPost(e) {
       if (monthSurplus >= 0) {
         // Healthy (Green status)
         surplusValEl.className = "text-sm font-black text-emerald-600";
-        alertContainer.className = "mt-4 p-3.5 rounded-xl border border-emerald-200 bg-emerald-50/50 flex items-center space-x-3";
+        alertContainer.className = "mt-4 p-3 rounded-xl border border-emerald-200 bg-emerald-50/50 flex items-center space-x-3";
         alertIcon.className = "w-8 h-8 bg-emerald-500 text-white rounded-full flex items-center justify-center text-sm shrink-0 shadow-sm";
         alertIcon.innerHTML = `<i class="fa-solid fa-heart-pulse"></i>`;
         alertTitle.className = "text-xs font-bold text-emerald-900";
@@ -1344,7 +1430,7 @@ function doPost(e) {
       } else {
         // Deficit (Red status)
         surplusValEl.className = "text-sm font-black text-rose-600";
-        alertContainer.className = "mt-4 p-3.5 rounded-xl border border-rose-200 bg-rose-50/50 flex items-center space-x-3";
+        alertContainer.className = "mt-4 p-3 rounded-xl border border-rose-200 bg-rose-50/50 flex items-center space-x-3";
         alertIcon.className = "w-8 h-8 bg-rose-500 text-white rounded-full flex items-center justify-center text-sm shrink-0 shadow-sm";
         alertIcon.innerHTML = `<i class="fa-solid fa-triangle-exclamation animate-bounce"></i>`;
         alertTitle.className = "text-xs font-bold text-rose-900";
@@ -1369,7 +1455,6 @@ function doPost(e) {
       walletContainer.innerHTML = '';
       debtContainer.innerHTML = '';
 
-      // 'Hutang Orang Lain (Piutang)' added dynamically under Cash & Bank as an active receivable asset
       const banks = ['Tunai (Cash)', 'Mandiri', 'BRI', 'Jago', 'BTN', 'Hutang Orang Lain (Piutang)'];
       const wallets = ['Dana', 'Gopay', 'Paypal', 'Ovo', 'LinkAja'];
       const debts = ['KPR BTN (Rumah)', 'Pinjaman Pribadi', 'Gopay Letter', 'Kredivo', 'Credinex', 'Kartu Kredit Mandiri', 'Kartu Kredit BRI (Tokopedia)'];
@@ -1379,7 +1464,7 @@ function doPost(e) {
       let debtTotal = 0;
 
       banks.forEach(b => {
-        const val = accounts[b];
+        const val = accounts[b] || 0;
         bankTotal += val;
         activeSum += val;
         const isCash = b.includes('Tunai');
@@ -1403,7 +1488,7 @@ function doPost(e) {
       });
 
       wallets.forEach(w => {
-        const val = accounts[w];
+        const val = accounts[w] || 0;
         walletTotal += val;
         activeSum += val;
         walletContainer.innerHTML += `
@@ -1417,7 +1502,7 @@ function doPost(e) {
       });
 
       debts.forEach(d => {
-        const limitUsage = accounts[d];
+        const limitUsage = accounts[d] || 0;
         const limitTotal = paylaterLimits[d] || 0;
         const isKpr = d.includes('KPR');
         const isPinjaman = d.includes('Pinjaman');
@@ -1472,65 +1557,6 @@ function doPost(e) {
       }
     }
 
-    // Render Donut Chart & Ratio Bulanan
-    function renderRatioChart() {
-      let needsTotal = 0;
-      let wantsTotal = 0;
-      let savingsTotal = 0;
-
-      const now = new Date();
-      const thisMonthTxs = transactions.filter(tx => {
-        const txDate = new Date(cleanDate(tx.date));
-        return tx.type === 'Pengeluaran' && txDate.getMonth() === now.getMonth() && txDate.getFullYear() === now.getFullYear();
-      });
-
-      thisMonthTxs.forEach(tx => {
-        if (tx.category === 'Kebutuhan') needsTotal += tx.amount;
-        else if (tx.category === 'Keinginan') wantsTotal += tx.amount;
-        else if (tx.category === 'Tabungan/Investasi') savingsTotal += tx.amount;
-      });
-
-      const grandTotal = needsTotal + wantsTotal + savingsTotal || 1;
-
-      const needsP = Math.round((needsTotal / grandTotal) * 100);
-      const wantsP = Math.round((wantsTotal / grandTotal) * 100);
-      const savingsP = Math.round((savingsTotal / grandTotal) * 100);
-
-      document.getElementById('needsPercent').innerText = `${needsP}%`;
-      document.getElementById('wantsPercent').innerText = `${wantsP}%`;
-      document.getElementById('savingsPercent').innerText = `${savingsP}%`;
-
-      document.getElementById('needsProgress').style.width = `${needsP}%`;
-      document.getElementById('wantsProgress').style.width = `${wantsP}%`;
-      document.getElementById('savingsProgress').style.width = `${savingsP}%`;
-
-      const ctx = document.getElementById('ratioChart').getContext('2d');
-      if (ratioChart) {
-        ratioChart.destroy();
-      }
-
-      ratioChart = new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-          labels: ['Kebutuhan', 'Keinginan', 'Tabungan/KPR'],
-          datasets: [{
-            data: [needsTotal || 1, wantsTotal || 0, savingsTotal || 0],
-            backgroundColor: ['#2563eb', '#f43f5e', '#10b981'],
-            borderWidth: 0,
-            hoverOffset: 3
-          }]
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: { display: false }
-          },
-          cutout: '72%'
-        }
-      });
-    }
-
     function renderTransactions() {
       const tbody = document.getElementById('transactionTableBody');
       const mobileContainer = document.getElementById('transactionCardsMobile');
@@ -1541,13 +1567,11 @@ function doPost(e) {
       mobileContainer.innerHTML = '';
 
       const typeFilter = document.getElementById('filterType').value;
-      const catFilter = document.getElementById('filterCategory').value;
 
       // Sort transactions: Newest date first. If dates are identical, sort by ID descending (ensures recently inserted is always on top)
       const filtered = transactions.filter(tx => {
         const matchType = (typeFilter === 'All') || (tx.type === typeFilter);
-        const matchCategory = (catFilter === 'All') || (tx.category === catFilter);
-        return matchType && matchCategory;
+        return matchType;
       }).sort((a, b) => {
         const dateA = new Date(cleanDate(a.date));
         const dateB = new Date(cleanDate(b.date));
@@ -1607,14 +1631,14 @@ function doPost(e) {
         // Strictly formats display date to DD-MM-YYYY
         const displayDate = formatDateToDMY(tx.date);
 
-        // Desktop Table HTML (With newly added Edit buttons)
+        // Desktop Table HTML
         tbody.innerHTML += `
                     <tr class="hover:bg-slate-50/50 transition">
                         <td class="px-6 py-4 whitespace-nowrap text-xs text-slate-400 font-mono font-bold">#${tx.id}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-xs text-slate-500 font-bold">${displayDate}</td>
                         <td class="px-6 py-4 whitespace-nowrap">
                             <span class="inline-flex items-center px-2 py-0.5 rounded-lg border text-[11px] font-semibold ${badgeStyle}">
-                                ${tx.type} • ${tx.category || '-'}
+                                ${tx.type}
                             </span>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-xs font-bold text-slate-700">${accountDisplay}</td>
@@ -1631,14 +1655,14 @@ function doPost(e) {
                     </tr>
                 `;
 
-        // Mobile Card HTML (With newly added Edit buttons)
+        // Mobile Card HTML
         mobileContainer.innerHTML += `
                     <div class="pt-3.5 pb-1 flex justify-between items-start">
                         <div class="space-y-1">
                             <div class="flex items-center gap-1.5 flex-wrap">
                                 <span class="text-[10px] text-slate-400 font-mono font-bold">#${tx.id}</span>
                                 <span class="text-[10px] text-slate-600 font-bold">${displayDate}</span>
-                                <span class="px-1.5 py-0.5 rounded border text-[9px] font-bold ${badgeStyle}">${tx.type} • ${tx.category || '-'}</span>
+                                <span class="px-1.5 py-0.5 rounded border text-[9px] font-bold ${badgeStyle}">${tx.type}</span>
                             </div>
                             <h4 class="text-xs font-extrabold text-slate-800">${tx.note}</h4>
                             <p class="text-[10px] text-slate-400 font-bold flex items-center gap-1">
@@ -1727,7 +1751,6 @@ function doPost(e) {
 
       const sourceContainer = document.getElementById('sourceContainer');
       const transferFieldsContainer = document.getElementById('transferFieldsContainer');
-      const catContainer = document.getElementById('categoryContainer');
 
       const accountSelect = document.getElementById('txAccount');
       const transferSourceSelect = document.getElementById('txTransferSource');
@@ -1744,7 +1767,6 @@ function doPost(e) {
       if (type === 'Transfer') {
         sourceContainer.classList.add('hidden');
         transferFieldsContainer.classList.remove('hidden');
-        catContainer.classList.add('hidden');
 
         const selectableAccounts = [...banks, ...wallets, 'Gopay Letter', 'Kredivo', 'Credinex', 'Kartu Kredit Mandiri', 'Kartu Kredit BRI (Tokopedia)'];
         selectableAccounts.forEach(acc => {
@@ -1760,19 +1782,16 @@ function doPost(e) {
         transferFieldsContainer.classList.add('hidden');
 
         if (type === 'Pemasukan') {
-          catContainer.classList.add('hidden');
           document.getElementById('lblSource').innerText = "Simpan Pendapatan Ke";
           [...banks, ...wallets].forEach(acc => {
             accountSelect.innerHTML += `<option value="${acc}">${acc}</option>`;
           });
         } else if (type === 'Pengeluaran') {
-          catContainer.classList.remove('hidden');
           document.getElementById('lblSource').innerText = "Bayar Menggunakan";
           [...banks, ...wallets, ...debts].forEach(acc => {
             accountSelect.innerHTML += `<option value="${acc}">${acc}</option>`;
           });
         } else if (type === 'Bayar Pinjol') {
-          catContainer.classList.add('hidden');
           document.getElementById('lblSource').innerText = "Akun Kredit / Cicilan yang Dibayar";
           debts.forEach(acc => {
             accountSelect.innerHTML += `<option value="${acc}">${acc}</option>`;
@@ -1811,7 +1830,6 @@ function doPost(e) {
         const note = document.getElementById('txNote').value;
 
         let account = "";
-        let category = "Umum";
 
         if (type === 'Transfer') {
           const src = document.getElementById('txTransferSource').value;
@@ -1821,16 +1839,8 @@ function doPost(e) {
             throw new Error("Same source and destination");
           }
           account = `${src}|${dest}`;
-          category = "Transfer";
         } else {
           account = document.getElementById('txAccount').value;
-          if (type === 'Pengeluaran') {
-            category = document.getElementById('txCategory').value;
-          } else if (type === 'Pemasukan') {
-            category = "Pendapatan";
-          } else if (type === 'Bayar Pinjol') {
-            category = "Bayar Utang";
-          }
         }
 
         if (isEditMode) {
@@ -1843,7 +1853,6 @@ function doPost(e) {
               type,
               amount,
               account,
-              category,
               note
             };
 
@@ -1873,7 +1882,6 @@ function doPost(e) {
             type,
             amount,
             account,
-            category,
             note
           };
 

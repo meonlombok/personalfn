@@ -1853,7 +1853,7 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
                     <td class="py-3.5 px-4">
                         <div class="flex items-center space-x-2">
                             ${typeBadge}
-                            <span class="font-bold text-slate-800">[#${tx.id}] ${tx.category}</span>
+                            <span class="font-bold text-slate-800">${tx.category}</span>
                         </div>
                     </td>
                     <td class="py-3.5 px-4">${accountFlow}</td>
@@ -1895,7 +1895,7 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
                                 ${typeBadge}
                                 <span class="text-[10px] text-slate-400 font-semibold">${tx.date}</span>
                             </div>
-                            <h4 class="text-xs font-bold text-slate-800 truncate">[#${tx.id}] ${tx.category}</h4>
+                            <h4 class="text-xs font-bold text-slate-800 truncate">${tx.category}</h4>
                         </div>
                         <div class="text-right">
                             <div class="text-xs font-extrabold">${amountStr}</div>

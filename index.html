@@ -388,15 +388,15 @@
 
         <!-- Filter Result Summary Cards -->
         <div class="grid grid-cols-3 gap-3 mb-6">
-          <div class="bg-emerald-50/50 p-3 rounded-xl border border-emerald-100 flex flex-col justify-between">
+          <div class="bg-emerald-50/50 p-3 rounded-xl border border-emerald-400 flex flex-col justify-between">
             <span class="text-[9px] font-bold text-emerald-700 uppercase tracking-wider">Total Masuk</span>
             <span id="filter-summary-income" class="text-xs sm:text-sm font-extrabold text-emerald-800 mt-1">Rp 0</span>
           </div>
-          <div class="bg-rose-50/50 p-3 rounded-xl border border-rose-100 flex flex-col justify-between">
+          <div class="bg-rose-50/50 p-3 rounded-xl border border-rose-400 flex flex-col justify-between">
             <span class="text-[9px] font-bold text-rose-700 uppercase tracking-wider">Total Keluar (+Fee)</span>
             <span id="filter-summary-expense" class="text-xs sm:text-sm font-extrabold text-rose-800 mt-1">Rp 0</span>
           </div>
-          <div class="bg-blue-50/50 p-3 rounded-xl border border-blue-100 flex flex-col justify-between">
+          <div class="bg-blue-50/50 p-3 rounded-xl border border-blue-400 flex flex-col justify-between">
             <span class="text-[9px] font-bold text-blue-700 uppercase tracking-wider">Arus Bersih (Net)</span>
             <span id="filter-summary-net" class="text-xs sm:text-sm font-extrabold text-blue-800 mt-1">Rp 0</span>
           </div>
@@ -1230,7 +1230,15 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
         setDefaultSeedData();
       }
 
-      renderAll();
+      // PROFESSIONAL UPDATE: Auto-fetch from Google Sheets on start/refresh to prevent desync
+      if (state.syncUrl) {
+        showToast("🔄 Menyinkronkan database dengan Google Sheets...");
+        fetchAndMergeFromCloud().then(() => {
+          renderAll();
+        });
+      } else {
+        renderAll();
+      }
     };
 
     function setDefaultSeedData() {
@@ -1346,6 +1354,48 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
     // Save states to local computer storage
     function saveStateLocally() {
       localStorage.setItem('financely_pro_state_v3', JSON.stringify(state));
+    }
+
+    // PROFESSIONAL UPDATE: Smart merge with Google Sheets
+    async function fetchAndMergeFromCloud() {
+      if (!state.syncUrl) return;
+      try {
+        const response = await fetch(state.syncUrl);
+        if (response.ok) {
+          const cloudData = await response.json();
+          if (cloudData) {
+            // Merging accounts: Cloud is the authority, keep unique local unsynced accounts
+            const cloudAccs = cloudData.accounts || [];
+            const localAccs = state.accounts || [];
+            const mergedAccounts = [...cloudAccs];
+
+            localAccs.forEach(lAcc => {
+              if (!mergedAccounts.some(cAcc => cAcc.id === lAcc.id)) {
+                mergedAccounts.push(lAcc);
+              }
+            });
+
+            // Merging transactions: Cloud is authority, keep unique local unsynced transactions
+            const cloudTxs = cloudData.transactions || [];
+            const localTxs = state.transactions || [];
+            const mergedTxs = [...cloudTxs];
+
+            localTxs.forEach(lTx => {
+              if (!mergedTxs.some(cTx => cTx.id === lTx.id)) {
+                mergedTxs.push(lTx);
+              }
+            });
+
+            state.accounts = mergedAccounts;
+            state.transactions = mergedTxs;
+            if (cloudData.widgets) state.widgets = cloudData.widgets;
+
+            saveStateLocally();
+          }
+        }
+      } catch (err) {
+        console.error("Silent auto-fetch/merge failed:", err);
+      }
     }
 
     // Render All Modules
@@ -1895,7 +1945,7 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
                                 ${typeBadge}
                                 <span class="text-[10px] text-slate-400 font-semibold">${tx.date}</span>
                             </div>
-                            <h4 class="text-xs font-bold text-slate-800 truncate">${tx.category}</h4>
+                            <h4 class="text-xs font-bold text-slate-800 truncate">[#${tx.id}] ${tx.category}</h4>
                         </div>
                         <div class="text-right">
                             <div class="text-xs font-extrabold">${amountStr}</div>
@@ -2048,8 +2098,15 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
     }
 
     // Action: Save Accounts (New / Edit)
-    function handleSaveAccount(event) {
+    async function handleSaveAccount(event) {
       event.preventDefault();
+
+      // PROFESSIONAL UPDATE: Pull before mutation to prevent desync
+      if (state.syncUrl) {
+        showToast("Sinkronisasi database awan...");
+        await fetchAndMergeFromCloud();
+      }
+
       const editIdRaw = document.getElementById('edit-account-id').value;
       const editId = editIdRaw ? parseInt(editIdRaw) : null;
       const name = document.getElementById('acc-name').value;
@@ -2130,7 +2187,13 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
       showCustomConfirm(
         "Hapus Akun Keuangan",
         `Apakah Anda yakin ingin menghapus akun "${acc.name}"? Sisa saldo terkait tidak akan mempengaruhi riwayat log transaksi di Google Sheets.`,
-        function () {
+        async function () {
+          // PROFESSIONAL UPDATE: Pull before mutation to prevent desync
+          if (state.syncUrl) {
+            showToast("Menyelaraskan dengan cloud...");
+            await fetchAndMergeFromCloud();
+          }
+
           state.accounts = state.accounts.filter(a => a.id !== accIdParsed);
           saveStateLocally();
           renderAll();
@@ -2214,8 +2277,15 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
     }
 
     // Action: Submit standard income/expense
-    function handleRegularTransaction(event) {
+    async function handleRegularTransaction(event) {
       event.preventDefault();
+
+      // PROFESSIONAL UPDATE: Pull before mutation to prevent desync
+      if (state.syncUrl) {
+        showToast("Sinkronisasi database awan...");
+        await fetchAndMergeFromCloud();
+      }
+
       const editIdRaw = document.getElementById('edit-tx-id').value;
       const editId = editIdRaw ? parseInt(editIdRaw) : null;
       const accountIdRaw = document.getElementById('tx-account').value;
@@ -2343,8 +2413,15 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
     }
 
     // Action: Submit Pembayaran Cicilan (Dapat mencakup multi-cicilan dengan Single Fee & Tambahan denda/bunga)
-    function handleDebtTransaction(event) {
+    async function handleDebtTransaction(event) {
       event.preventDefault();
+
+      // PROFESSIONAL UPDATE: Pull before mutation to prevent desync
+      if (state.syncUrl) {
+        showToast("Sinkronisasi database awan...");
+        await fetchAndMergeFromCloud();
+      }
+
       const editIdRaw = document.getElementById('edit-debt-tx-id').value;
       const editId = editIdRaw ? parseInt(editIdRaw) : null;
       const sourceId = parseInt(document.getElementById('debt-source').value);
@@ -2481,8 +2558,15 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
     }
 
     // Action: Submit Transfer Saldo Antar Akun
-    function handleTransferTransaction(event) {
+    async function handleTransferTransaction(event) {
       event.preventDefault();
+
+      // PROFESSIONAL UPDATE: Pull before mutation to prevent desync
+      if (state.syncUrl) {
+        showToast("Sinkronisasi database awan...");
+        await fetchAndMergeFromCloud();
+      }
+
       const editIdRaw = document.getElementById('edit-transfer-tx-id').value;
       const editId = editIdRaw ? parseInt(editIdRaw) : null;
       const sourceId = parseInt(document.getElementById('transfer-source').value);
@@ -2632,7 +2716,13 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
       showCustomConfirm(
         "Hapus Transaksi (Rollback Saldo)",
         `Hapus transaksi [#${tx.id}] "${tx.category}"? Aksi ini secara profesional akan MENGEMBALIKAN saldo rekening asal dan limit kreditor Anda ke posisi semula sebelum transaksi dilakukan.`,
-        function () {
+        async function () {
+          // PROFESSIONAL UPDATE: Pull before mutation to prevent desync
+          if (state.syncUrl) {
+            showToast("Menyelaraskan dengan cloud...");
+            await fetchAndMergeFromCloud();
+          }
+
           // JALANKAN LOGIKA ROLLBACK FINANSIAL
           const sourceAcc = state.accounts.find(a => a.id === tx.accountId);
 
@@ -2841,11 +2931,11 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
       }
     }
 
-    // FUNGSI KHUSUS: Integrasi URL Pertama Kali (Satu-satunya tempat yang bisa memunculkan konfirmasi konflik)
+    // FUNGSI KHUSUS: Integrasi URL Pertama Kali (Satu-satunya tempat yang bisa memunculkan pemulihan data cloud)
     async function syncNowFirstTime() {
       if (!state.syncUrl) return;
 
-      showToast("Mengintegrasikan URL... Harap tunggu.");
+      showToast("Menghubungkan ke Google Sheets...");
 
       try {
         const response = await fetch(state.syncUrl);
@@ -2856,44 +2946,21 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
         }
 
         const cloudHasData = cloudData && cloudData.accounts && cloudData.accounts.length > 0;
-        const localIsDummy = isDatabaseStillDummy();
 
         if (cloudHasData) {
-          if (localIsDummy) {
-            // Skenario A: Browser ini masih baru (kosong/dummy), tapi di cloud sudah ada data asli user.
-            // Lakukan AUTO-PULL secara otomatis demi kenyamanan memulihkan data asli Anda.
-            state.accounts = cloudData.accounts;
-            state.transactions = cloudData.transactions || [];
-            if (cloudData.widgets) state.widgets = cloudData.widgets;
+          // Cloud has data. Pull it immediately to prevent local storage overwriting active database.
+          state.accounts = cloudData.accounts;
+          state.transactions = cloudData.transactions || [];
+          if (cloudData.widgets) state.widgets = cloudData.widgets;
 
-            saveStateLocally();
-            renderAll();
-            showToast("📥 Pemulihan Sukses! Data asli Anda ditarik dari Google Sheets.");
-            return;
-          } else {
-            // Skenario B: Browser ini sudah punya data modifikasi baru, dan cloud juga punya data aktif.
-            // CUKUP TANYAKAN SEKALI SAAT INTEGRASI AWAL INI SAJA.
-            const userChoice = confirm(
-              "KONFLIK DATA DETEKSI:\n\n" +
-              "Data di peramban ini berbeda dengan data yang ada di Google Sheets.\n\n" +
-              "• Klik [OK] untuk mengambil data lama dari Google Sheets (Menimpa browser ini).\n" +
-              "• Klik [Batal] untuk mengirim data browser ini ke Google Sheets (Menimpa cloud)."
-            );
-
-            if (userChoice) {
-              state.accounts = cloudData.accounts;
-              state.transactions = cloudData.transactions || [];
-              if (cloudData.widgets) state.widgets = cloudData.widgets;
-              saveStateLocally();
-              renderAll();
-              showToast("📥 Database berhasil dimuat dari Google Sheets.");
-              return;
-            }
-          }
+          saveStateLocally();
+          renderAll();
+          showToast("📥 Pemulihan Sukses! Data dari Google Sheets berhasil ditarik.");
+        } else {
+          // Cloud is empty. Send local database to sheets safely.
+          showToast("Sukses Terhubung! Mengirim data lokal ke Google Sheets...");
+          await pushToCloud();
         }
-
-        // Jalankan Push manual untuk pertama kali jika aman
-        await pushToCloud();
       } catch (err) {
         console.error(err);
         showToast("Gagal mengintegrasikan database cloud.");
@@ -2901,13 +2968,46 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
     }
 
     // FUNGSI SINKRONISASI AKTIF: Dipanggil ketika tombol "Sinkronisasikan Sekarang" ditekan secara manual
+    // PROFESSIONAL UPDATE: Restriction applied to prevent overriding active database
     async function syncNow() {
       if (!state.syncUrl) {
         showToast("Mohon isi URL Google Apps Script Anda terlebih dahulu!");
         return;
       }
-      showToast("Menyelaraskan data...");
-      await pushToCloud();
+      showToast("Memeriksa status database cloud...");
+      try {
+        const response = await fetch(state.syncUrl);
+        let cloudData = null;
+        if (response.ok) {
+          cloudData = await response.json();
+        }
+
+        const cloudHasData = cloudData && cloudData.accounts && cloudData.accounts.length > 0;
+
+        if (cloudHasData) {
+          // Cloud already has data! Pull it to align local state and reject silent local overwriting
+          state.accounts = cloudData.accounts;
+          state.transactions = cloudData.transactions || [];
+          if (cloudData.widgets) state.widgets = cloudData.widgets;
+
+          saveStateLocally();
+          renderAll();
+
+          // Notify the user about automated safe sync instead of overwriting sheets
+          showCustomConfirm(
+            "Sinkronisasi Cloud Aktif",
+            "Google Sheets Anda sudah berisi database aktif. Untuk mencegah data tumpang tindih, sinkronisasi manual ditiadakan. Aplikasi kini berjalan dalam mode Sinkronisasi Otomatis Cerdas (data terupdate otomatis di latar belakang setiap kali Anda menginput data).",
+            () => { }
+          );
+        } else {
+          // Cloud is empty, safe to push current local state
+          showToast("Google Sheets kosong. Mengunggah data awal Anda...");
+          await pushToCloud();
+        }
+      } catch (err) {
+        console.error(err);
+        showToast("Gagal memeriksa status Google Sheets.");
+      }
     }
 
     // CORE POST SINKRONISASI: Mengirim data ke Google Sheets tanpa melakukan pengecekan konflik lagi

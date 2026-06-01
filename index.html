@@ -1517,8 +1517,9 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
     // Widget Logic 2: Daily Expenses averages
     function calculateAvgDailyWidget() {
       const today = new Date();
-      const dayOfMonth = today.getDate();
       const year = today.getFullYear();
+      const month = today.getMonth() + 1;
+      const dayOfMonth = new Date(year, month, 0).getDate();
       const monthStr = String(today.getMonth() + 1).padStart(2, '0');
       const indoFilterKey = `-${monthStr}-${year}`;
 

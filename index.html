@@ -554,7 +554,7 @@
         <div>
           <label for="acc-type" class="block text-xs font-semibold text-slate-600 mb-1">Jenis Akun</label>
           <select id="acc-type" required
-            class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-white text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500">
+            class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs bg-white text-slate-808 text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500">
             <option value="BANK">Bank / Rekening Utama</option>
             <option value="E-WALLET">E-Wallet (Dompet Digital)</option>
             <option value="CREDIT">Kredit / Limit Tagihan (Hutang)</option>
@@ -564,7 +564,7 @@
         <div>
           <label id="lbl-acc-balance" for="acc-balance" class="block text-xs font-semibold text-slate-600 mb-1">Saldo
             Aktual Awal (Rp)</label>
-          <input type="number" id="acc-balance" required placeholder="0"
+          <input type="text" id="acc-balance" required placeholder="0"
             class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500">
           <span id="help-acc-balance" class="text-[10px] text-slate-400">Masukkan nilai sisa saldo uang riil Anda saat
             ini.</span>
@@ -695,7 +695,7 @@
 
         <div>
           <label for="tx-amount" class="block text-xs font-semibold text-slate-600 mb-1">Jumlah Nominal (Rp)</label>
-          <input type="number" id="tx-amount" required placeholder="Contoh: 15000"
+          <input type="text" id="tx-amount" required placeholder="Contoh: 15.000"
             class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500">
         </div>
 
@@ -759,7 +759,7 @@
           <div>
             <label for="debt-other-amount" class="block text-xs font-semibold text-slate-600 mb-1">Nominal Tambahan
               (Rp)</label>
-            <input type="number" id="debt-other-amount" placeholder="0"
+            <input type="text" id="debt-other-amount" placeholder="0"
               class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500 bg-white">
           </div>
         </div>
@@ -769,13 +769,13 @@
             <label for="debt-amount" class="block text-xs font-semibold text-slate-600 mb-1">Total Pokok Cicilan
               (Rp)</label>
             <!-- Pokok is calculated dynamically or overridable manually -->
-            <input type="number" id="debt-amount" required placeholder="0"
+            <input type="text" id="debt-amount" required placeholder="0"
               class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500">
           </div>
           <div>
             <label for="debt-fee" class="block text-xs font-semibold text-slate-600 mb-1">Biaya Transaksi / Fee
               (Rp)</label>
-            <input type="number" id="debt-fee" placeholder="0"
+            <input type="text" id="debt-fee" placeholder="0"
               class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500">
           </div>
         </div>
@@ -827,12 +827,12 @@
           <div>
             <label for="transfer-amount" class="block text-xs font-semibold text-slate-600 mb-1">Nominal Pokok
               (Rp)</label>
-            <input type="number" id="transfer-amount" required placeholder="0"
+            <input type="text" id="transfer-amount" required placeholder="0"
               class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500">
           </div>
           <div>
             <label for="transfer-fee" class="block text-xs font-semibold text-slate-600 mb-1">Biaya Admin (Fee)</label>
-            <input type="number" id="transfer-fee" placeholder="0"
+            <input type="text" id="transfer-fee" placeholder="0"
               class="w-full px-3 py-2 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-brand-500">
           </div>
         </div>
@@ -1185,7 +1185,7 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
       const feeInp = document.getElementById('debt-fee');
       const otherAmtInp = document.getElementById('debt-other-amount');
       const calcTotal = () => {
-        const total = (parseFloat(amtInp.value) || 0) + (parseFloat(feeInp.value) || 0) + (parseFloat(otherAmtInp.value) || 0);
+        const total = (getCleanNumber('debt-amount')) + (getCleanNumber('debt-fee')) + (getCleanNumber('debt-other-amount'));
         document.getElementById('total-deduction-summary').innerText = formatRupiah(total);
       };
       amtInp.addEventListener('input', calcTotal);
@@ -1196,11 +1196,23 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
       const transferAmtInp = document.getElementById('transfer-amount');
       const transferFeeInp = document.getElementById('transfer-fee');
       const calcTransferTotal = () => {
-        const total = (parseFloat(transferAmtInp.value) || 0) + (parseFloat(transferFeeInp.value) || 0);
+        const total = (getCleanNumber('transfer-amount')) + (getCleanNumber('transfer-fee'));
         document.getElementById('transfer-deduction-summary').innerText = formatRupiah(total);
       };
       transferAmtInp.addEventListener('input', calcTransferTotal);
       transferFeeInp.addEventListener('input', calcTransferTotal);
+
+      // Mendaftarkan format rupiah real-time secara aman
+      setupRupiahInputFormatter('tx-amount');
+      setupRupiahInputFormatter('acc-balance');
+      setupRupiahInputFormatter('debt-amount');
+      setupRupiahInputFormatter('debt-fee');
+      setupRupiahInputFormatter('debt-other-amount');
+      setupRupiahInputFormatter('transfer-amount');
+      setupRupiahInputFormatter('transfer-fee');
+
+      // Memantau status koneksi internet untuk pencegahan crash data
+      setupConnectivityMonitoring();
 
       // Account Type Change Listener
       document.getElementById('acc-type').addEventListener('change', function (e) {
@@ -1924,7 +1936,7 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
 
         // 2. Render Kartu Mobile
         const card = document.createElement('div');
-        card.className = "bg-white p-4 rounded-2xl border border-slate-150 shadow-sm relative space-y-2";
+        card.className = "bg-white p-4 rounded-2xl border border-slate-155 shadow-sm relative space-y-2";
 
         let mobileFlowDesc = "";
         if (tx.type === 'PAY_DEBT' || tx.type === 'TRANSFER') {
@@ -1946,7 +1958,7 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
                                 ${typeBadge}
                                 <span class="text-[10px] text-slate-400 font-semibold">${tx.date}</span>
                             </div>
-                            <h4 class="text-xs font-bold text-slate-800 truncate">[#${tx.id}] ${tx.category}</h4>
+                            <h4 class="text-xs font-bold text-slate-800 truncate">${tx.category}</h4>
                         </div>
                         <div class="text-right">
                             <div class="text-xs font-extrabold">${amountStr}</div>
@@ -2071,6 +2083,9 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
       document.getElementById('acc-type').value = acc.type;
       document.getElementById('acc-balance').value = acc.balance;
 
+      // Format visual saat mengedit akun
+      formatInputElement(document.getElementById('acc-balance'));
+
       const isCredit = acc.type === 'CREDIT';
       const label = document.getElementById('lbl-acc-balance');
       const help = document.getElementById('help-acc-balance');
@@ -2112,7 +2127,7 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
       const editId = editIdRaw ? parseInt(editIdRaw) : null;
       const name = document.getElementById('acc-name').value;
       const type = document.getElementById('acc-type').value;
-      const balance = parseFloat(document.getElementById('acc-balance').value) || 0;
+      const balance = getCleanNumber('acc-balance');
 
       if (!name || !type) return;
 
@@ -2126,7 +2141,7 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
           const rawInstId = row.querySelector('.inst-id-field').value;
           const instLastPaid = row.querySelector('.inst-paid-field') ? row.querySelector('.inst-paid-field').value : "";
           const instName = row.querySelector('.inst-name-field').value;
-          const instAmt = parseFloat(row.querySelector('.inst-amount-field').value) || 0;
+          const instAmt = parseFloat(row.querySelector('.inst-amount-field').value.replace(/\./g, '')) || 0;
           const instDue = parseInt(row.querySelector('.inst-due-field').value) || 1;
           const instTenor = parseInt(row.querySelector('.inst-tenor-field').value) || 1;
 
@@ -2175,6 +2190,7 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
       saveStateLocally();
       renderAll();
       closeAddAccountModal();
+      clearFormInputs(); // Auto-clear draf dan form
 
       autoSyncIfPossible();
     }
@@ -2273,6 +2289,10 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
       }
 
       debtAmountInput.value = totalPokok;
+
+      // Jalankan format visual langsung di input
+      formatInputElement(debtAmountInput);
+
       // Trigger update total deduction preview
       debtAmountInput.dispatchEvent(new Event('input'));
     }
@@ -2292,7 +2312,7 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
       const accountIdRaw = document.getElementById('tx-account').value;
       const accountId = parseInt(accountIdRaw);
       const type = document.querySelector('input[name="tx-type"]:checked').value;
-      const amount = parseFloat(document.getElementById('tx-amount').value);
+      const amount = getCleanNumber('tx-amount');
       const category = document.getElementById('tx-category').value;
       const dateISO = document.getElementById('tx-date').value;
       const dateIndo = convertISOToIndo(dateISO);
@@ -2306,6 +2326,14 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
       if (!targetAcc) {
         showToast("Rekening tidak ditemukan.");
         return;
+      }
+
+      // POIN 1: VALIDASI SALDO NEGATIF
+      if (type === 'EXPENSE' && targetAcc.type !== 'CREDIT') {
+        if (amount > targetAcc.balance) {
+          showToast(`⚠️ Transaksi ditolak! Saldo ${targetAcc.name} saat ini tidak mencukupi (${formatRupiah(targetAcc.balance)}).`);
+          return;
+        }
       }
 
       // Kembalikan efek saldo lama jika edit
@@ -2409,6 +2437,7 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
       saveStateLocally();
       renderAll();
       closeTransactionModal();
+      clearFormInputs(); // Auto-clear draf dan form
 
       autoSyncIfPossible();
     }
@@ -2427,10 +2456,10 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
       const editId = editIdRaw ? parseInt(editIdRaw) : null;
       const sourceId = parseInt(document.getElementById('debt-source').value);
       const targetId = parseInt(document.getElementById('debt-target').value);
-      const amount = parseFloat(document.getElementById('debt-amount').value);
-      const fee = parseFloat(document.getElementById('debt-fee').value) || 0;
+      const amount = getCleanNumber('debt-amount');
+      const fee = getCleanNumber('debt-fee');
       const otherName = document.getElementById('debt-other-name').value || "";
-      const otherAmount = parseFloat(document.getElementById('debt-other-amount').value) || 0;
+      const otherAmount = getCleanNumber('debt-other-amount');
       const dateISO = document.getElementById('debt-date').value;
       const dateIndo = convertISOToIndo(dateISO);
 
@@ -2445,6 +2474,15 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
       if (!sourceAcc || !targetAcc) {
         showToast("Akun asal / tujuan bermasalah.");
         return;
+      }
+
+      // POIN 1: VALIDASI SALDO NEGATIF
+      const totalDeduction = amount + otherAmount + fee;
+      if (sourceAcc.type !== 'CREDIT') {
+        if (totalDeduction > sourceAcc.balance) {
+          showToast(`⚠️ Transaksi ditolak! Saldo ${sourceAcc.name} saat ini tidak mencukupi (${formatRupiah(sourceAcc.balance)}).`);
+          return;
+        }
       }
 
       // Reverse data lama jika dalam mode edit
@@ -2472,9 +2510,6 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
           }
         }
       }
-
-      // Hitung total potongan dana
-      const totalDeduction = amount + otherAmount + fee;
 
       // Update Saldo Rekening
       sourceAcc.balance -= totalDeduction;
@@ -2546,14 +2581,7 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
       saveStateLocally();
       renderAll();
       closeTransactionModal();
-
-      // Reset inputs
-      document.getElementById('edit-debt-tx-id').value = '';
-      document.getElementById('debt-amount').value = '';
-      document.getElementById('debt-fee').value = '';
-      document.getElementById('debt-other-name').value = '';
-      document.getElementById('debt-other-amount').value = '';
-      document.getElementById('total-deduction-summary').innerText = 'Rp 0';
+      clearFormInputs(); // Auto-clear draf dan form
 
       autoSyncIfPossible();
     }
@@ -2572,8 +2600,8 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
       const editId = editIdRaw ? parseInt(editIdRaw) : null;
       const sourceId = parseInt(document.getElementById('transfer-source').value);
       const targetId = parseInt(document.getElementById('transfer-target').value);
-      const amount = parseFloat(document.getElementById('transfer-amount').value);
-      const fee = parseFloat(document.getElementById('transfer-fee').value) || 0;
+      const amount = getCleanNumber('transfer-amount');
+      const fee = getCleanNumber('transfer-fee');
       const dateISO = document.getElementById('transfer-date').value;
       const dateIndo = convertISOToIndo(dateISO);
 
@@ -2594,6 +2622,15 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
         return;
       }
 
+      // POIN 1: VALIDASI SALDO NEGATIF
+      const totalDeduction = amount + fee;
+      if (sourceAcc.type !== 'CREDIT') {
+        if (totalDeduction > sourceAcc.balance) {
+          showToast(`⚠️ Transaksi ditolak! Saldo ${sourceAcc.name} saat ini tidak mencukupi (${formatRupiah(sourceAcc.balance)}).`);
+          return;
+        }
+      }
+
       if (editId) {
         const oldTx = state.transactions.find(t => t.id === editId);
         if (oldTx) {
@@ -2603,8 +2640,6 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
           if (prevTarget) prevTarget.balance -= oldTx.amount;
         }
       }
-
-      const totalDeduction = amount + fee;
 
       sourceAcc.balance -= totalDeduction;
       targetAcc.balance += amount;
@@ -2642,11 +2677,7 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
       saveStateLocally();
       renderAll();
       closeTransactionModal();
-
-      document.getElementById('edit-transfer-tx-id').value = '';
-      document.getElementById('transfer-amount').value = '';
-      document.getElementById('transfer-fee').value = '';
-      document.getElementById('transfer-deduction-summary').innerText = 'Rp 0';
+      clearFormInputs(); // Auto-clear draf dan form
 
       autoSyncIfPossible();
     }
@@ -2684,6 +2715,11 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
         document.getElementById('debt-other-amount').value = tx.otherAmount || 0;
         document.getElementById('debt-date').value = convertIndoToISO(tx.date);
 
+        // Format masukan saat modal edit terbuka
+        formatInputElement(document.getElementById('debt-amount'));
+        formatInputElement(document.getElementById('debt-fee'));
+        formatInputElement(document.getElementById('debt-other-amount'));
+
         // Trigger kalkulasi total potongan saldo preview
         document.getElementById('debt-amount').dispatchEvent(new Event('input'));
       } else if (tx.type === 'TRANSFER') {
@@ -2694,6 +2730,11 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
         document.getElementById('transfer-amount').value = tx.amount;
         document.getElementById('transfer-fee').value = tx.fee || 0;
         document.getElementById('transfer-date').value = convertIndoToISO(tx.date);
+
+        // Format masukan saat modal edit terbuka
+        formatInputElement(document.getElementById('transfer-amount'));
+        formatInputElement(document.getElementById('transfer-fee'));
+
         document.getElementById('transfer-amount').dispatchEvent(new Event('input'));
       } else {
         setModalFormTab('REGULAR');
@@ -2703,6 +2744,9 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
         document.getElementById('tx-amount').value = tx.amount;
         document.getElementById('tx-category').value = tx.category;
         document.getElementById('tx-date').value = convertIndoToISO(tx.date);
+
+        // Format masukan saat modal edit terbuka
+        formatInputElement(document.getElementById('tx-amount'));
       }
 
       openTransactionModal(tx.type === 'PAY_DEBT' ? 'DEBT' : (tx.type === 'TRANSFER' ? 'TRANSFER' : 'REGULAR'));
@@ -2801,6 +2845,7 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
       document.getElementById('account-modal').classList.remove('hidden');
     }
 
+    // Menutup modal pembuatan akun
     function closeAddAccountModal() {
       document.getElementById('account-modal').classList.add('hidden');
       document.getElementById('edit-account-id').value = '';
@@ -3035,8 +3080,123 @@ function syncSheetGeneric(ss, sheetName, headers, items, rowMapper) {
 
     // Silent auto sync di latar belakang (Tidak ada pop-up konfirmasi yang mengganggu)
     function autoSyncIfPossible() {
-      if (state.syncUrl) {
+      if (state.syncUrl && navigator.onLine) {
         pushToCloud();
+      }
+    }
+
+    // Helper: Pemformat input rupiah real-time secara aman (Poin 2 - Bebas Stack Overflow)
+    function setupRupiahInputFormatter(id) {
+      const el = document.getElementById(id);
+      if (!el) return;
+
+      el.addEventListener('input', function (e) {
+        // Cek jika ini adalah event kustom hasil format, hentikan rekursi loop
+        if (e.detail && e.detail.formatted) return;
+
+        let cursorPosition = this.selectionStart;
+        let originalLength = this.value.length;
+
+        formatInputElement(this);
+
+        let newLength = this.value.length;
+        cursorPosition = cursorPosition + (newLength - originalLength);
+        this.setSelectionRange(cursorPosition, cursorPosition);
+
+        // Memicu event input secara terkendali tanpa menyebabkan rekursi infinite
+        const ev = new CustomEvent('input', { bubbles: true, detail: { formatted: true } });
+        this.dispatchEvent(ev);
+      });
+    }
+
+    function formatInputElement(el) {
+      if (!el) return;
+      let val = el.value.replace(/\D/g, '');
+      if (val === '') {
+        el.value = '';
+        return;
+      }
+      el.value = parseInt(val, 10).toLocaleString('id-ID');
+    }
+
+    // Helper: Pembersih angka terformat untuk diproses kalkulasi matematika komputer
+    function getCleanNumber(id) {
+      const el = document.getElementById(id);
+      if (!el) return 0;
+      return parseFloat(el.value.replace(/\./g, '')) || 0;
+    }
+
+    // Helper: Membersihkan formulir & menghapus draf di LocalStorage (Poin 4)
+    function clearFormInputs() {
+      const inputsToClear = [
+        'tx-amount', 'tx-category', 'expense-credit-name', 'expense-credit-tenor', 'expense-credit-due',
+        'debt-amount', 'debt-fee', 'debt-other-name', 'debt-other-amount',
+        'transfer-amount', 'transfer-fee',
+        'acc-name', 'acc-balance'
+      ];
+
+      inputsToClear.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+
+      const checkbox = document.getElementById('expense-is-credit');
+      if (checkbox) checkbox.checked = false;
+
+      const debtWrapper = document.getElementById('debt-linked-bills-wrapper');
+      if (debtWrapper) debtWrapper.innerHTML = '';
+
+      const detailSec = document.getElementById('expense-credit-fields');
+      if (detailSec) detailSec.classList.add('hidden');
+
+      const splitSec = document.getElementById('expense-credit-split-sec');
+      if (splitSec) splitSec.classList.add('hidden');
+
+      document.getElementById('total-deduction-summary').innerText = 'Rp 0';
+      document.getElementById('transfer-deduction-summary').innerText = 'Rp 0';
+
+      // Hapus draf input jika ada tersimpan secara lokal
+      localStorage.removeItem('financely_pro_draft_regular');
+      localStorage.removeItem('financely_pro_draft_debt');
+      localStorage.removeItem('financely_pro_draft_transfer');
+    }
+
+    // Helper: Mengatur deteksi status koneksi internet secara real-time (Poin 3)
+    function setupConnectivityMonitoring() {
+      window.addEventListener('online', updateConnectivity);
+      window.addEventListener('offline', updateConnectivity);
+      updateConnectivity(); // Jalankan sekali saat inisiasi
+    }
+
+    // Helper: Mengendalikan pop-up pelindung offline agar tidak tumpang tindih
+    function updateConnectivity() {
+      let overlay = document.getElementById('offline-blocker-overlay');
+      if (!navigator.onLine) {
+        if (!overlay) {
+          overlay = document.createElement('div');
+          overlay.id = 'offline-blocker-overlay';
+          overlay.className = 'fixed inset-0 bg-slate-950/80 backdrop-blur-md z-[9999] flex flex-col items-center justify-center text-white p-6 transition-all duration-300';
+          overlay.innerHTML = `
+            <div class="bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 p-8 rounded-2xl shadow-xl max-w-sm text-center border border-slate-100 dark:border-slate-700 flex flex-col items-center">
+              <div class="p-4 bg-rose-50 text-rose-600 dark:bg-rose-950/30 dark:text-rose-400 rounded-full mb-4 animate-bounce">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636a9 9 0 010 12.728m0 0l-2.829-2.829m2.829 2.829L21 21M15.536 8.464a5 5 0 010 7.072m0 0l-2.829-2.829m-4.243 2.829a4.978 4.978 0 01-1.414-3.536 5 5 0 011.414-3.536m0 0l2.829 2.829M11.293 9.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L13.586 15l-3-3a1 1 0 010-1.414l3-3z" />
+                </svg>
+              </div>
+              <h3 class="text-base font-extrabold text-slate-900 dark:text-white mb-2">Koneksi Terputus</h3>
+              <p class="text-xs text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">Aplikasi dinonaktifkan sementara demi melindungi database Anda dari kegagalan sinkronisasi (crash data). Mohon aktifkan koneksi internet Anda kembali.</p>
+              <div class="flex items-center space-x-1.5 px-3 py-1.5 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-900/50 rounded-lg text-[10px] font-semibold">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span>
+                <span>Menunggu jaringan kembali...</span>
+              </div>
+            </div>
+          `;
+          document.body.appendChild(overlay);
+        }
+      } else {
+        if (overlay) {
+          overlay.remove();
+        }
       }
     }
   </script>
